@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compound App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+        }
+
+        .mobile-screen {
+            width: 375px;
+            height: 667px;
+            background: white;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .hide {
+            display: none;
+        }
+
+        /* Smooth transition for screen switching */
+        .screen-content {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="app-container" class="mobile-screen shadow-2xl rounded-xl border-8 border-gray-800 relative">
+
+        <section id="screen-login" class="h-full flex flex-col items-center justify-center px-8">
+            <h1 class="text-4xl font-bold tracking-tighter mb-12">COMPOUND</h1>
+            <input type="text" placeholder="Username"
+                class="w-full bg-gray-200 py-3 px-4 rounded mb-4 text-center focus:outline-none">
+            <input type="password" placeholder="Password"
+                class="w-full bg-gray-200 py-3 px-4 rounded mb-8 text-center focus:outline-none">
+
+            <button id="login-btn" onclick="handleLogin()"
+                class="bg-gray-800 text-white hover:bg-black px-12 py-3 rounded text-sm font-bold transition-all">
+                Login
+            </button>
+            <p class="text-[10px] text-gray-400 mt-4 italic">Tap login to enter without credentials</p>
+        </section>
+
+        <div id="app-shell" class="hide flex flex-col h-full">
+            <nav class="flex justify-around py-4 text-xs font-medium border-b border-gray-100">
+                <button onclick="navTo('overview')" class="nav-link" id="nav-overview">Overview</button>
+                <button onclick="navTo('transaction')" class="nav-link" id="nav-transaction">Transaction</button>
+                <button onclick="navTo('habit')" class="nav-link" id="nav-habit">Habit</button>
+                <button onclick="navTo('shop')" class="nav-link" id="nav-shop">Shop</button>
+            </nav>
+
+            <div class="p-6 flex-1 overflow-y-auto">
+
+                <section id="screen-overview" class="screen-content hide">
+                    <p class="text-gray-500">Hello,</p>
+                    <h2 class="text-3xl font-bold mb-6">Sohee</h2>
+
+                    <label class="text-xs text-gray-400 mb-2 block">Past 14 days</label>
+                    <div class="bg-gray-100 h-24 rounded-lg mb-6 flex items-end justify-around p-2">
+                        <div class="w-2 bg-gray-400 h-1/2 rounded-full"></div>
+                        <div class="w-2 bg-gray-400 h-3/4 rounded-full"></div>
+                        <div class="w-2 bg-gray-400 h-1/4 rounded-full"></div>
+                        <div class="w-2 bg-gray-800 h-full rounded-full"></div>
+                        <div class="w-2 bg-gray-400 h-2/3 rounded-full"></div>
+                    </div>
+
+                    <label class="text-xs text-gray-400 mb-2 block">Budget Balance: $300</label>
+                    <div class="grid grid-cols-4 gap-1 h-12 mb-8">
+                        <div class="bg-gray-800 rounded-sm"></div>
+                        <div class="bg-gray-800 rounded-sm"></div>
+                        <div class="bg-gray-800 rounded-sm"></div>
+                        <div class="border-2 border-dashed border-gray-300 rounded-sm"></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] text-gray-400 mb-1 block uppercase">Weekly</label>
+                            <div
+                                class="bg-gray-100 h-16 rounded-lg flex items-center justify-center font-bold text-green-600">
+                                +12%</div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-gray-400 mb-1 block uppercase">Monthly</label>
+                            <div
+                                class="bg-gray-100 h-16 rounded-lg flex items-center justify-center font-bold text-red-500">
+                                -5%</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="screen-transaction" class="screen-content hide">
+                    <h3 class="font-bold mb-4">New Transaction</h3>
+                    <div class="space-y-3 mb-8">
+                        <input type="date"
+                            class="w-full bg-gray-100 p-3 rounded text-sm focus:bg-gray-200 outline-none">
+                        <input type="number" placeholder="Amount"
+                            class="w-full bg-gray-100 p-3 rounded text-sm focus:bg-gray-200 outline-none">
+                        <input type="text" placeholder="Description"
+                            class="w-full bg-gray-100 p-3 rounded text-sm focus:bg-gray-200 outline-none">
+                        <select class="w-full bg-gray-100 p-3 rounded text-sm outline-none">
+                            <option>Food & Drinks</option>
+                            <option>Transport</option>
+                            <option>Shopping</option>
+                        </select>
+                    </div>
+
+                    <h3 class="font-bold mb-2">History</h3>
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-gray-800 text-white p-2 text-[10px] flex justify-between">
+                            <span>2026 January</span> <span>▼</span>
+                        </div>
+                        <div class="p-3 flex justify-between items-center">
+                            <div class="text-[10px]">
+                                <p class="font-bold">03 Jan 2026</p>
+                                <p class="text-gray-500">Bread / Food / PayLah</p>
+                            </div>
+                            <p class="text-lg font-bold">24.60</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="screen-habit" class="screen-content hide">
+                    <div class="flex justify-center space-x-8 mb-8 bg-gray-50 py-4 rounded-xl">
+                        <div class="text-center">
+                            <p class="text-xs text-gray-400">STREAK</p>
+                            <p class="font-bold">🔥 365</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-xs text-gray-400">POINTS</p>
+                            <p class="font-bold">✨ 50</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white border p-4 rounded-xl shadow-sm">
+                            <p class="text-xs font-bold mb-3">Health Tracking</p>
+                            <div class="flex items-end justify-between h-16 px-2">
+                                <div class="w-3 bg-gray-200 h-1/2 rounded-t"></div>
+                                <div class="w-3 bg-gray-800 h-3/4 rounded-t"></div>
+                                <div class="w-3 bg-gray-200 h-1/4 rounded-t"></div>
+                                <div class="w-3 bg-gray-800 h-full rounded-t"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white border p-4 rounded-xl shadow-sm">
+                            <p class="text-xs font-bold mb-3">Savings Goal</p>
+                            <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-4">
+                                <div class="h-full bg-gray-800 w-2/3"></div>
+                            </div>
+                            <div class="flex justify-between text-[8px] font-bold text-gray-400 uppercase">
+                                <span class="text-gray-800">10 Days ✅</span><span>20 Days</span><span>30 Days</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="screen-shop" class="screen-content hide">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="font-bold">Rewards Shop</h3>
+                        <span class="text-xs font-bold bg-gray-100 px-3 py-1 rounded-full">✨ 50 pts</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div
+                            class="border p-4 rounded-xl flex justify-between items-center hover:border-black transition-colors">
+                            <div class="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-xl">☕</div>
+                            <div class="flex-1 ml-4">
+                                <p class="text-xs font-bold">Free Coffee</p>
+                                <p class="text-[10px] text-gray-500">Redeem at any outlet</p>
+                            </div>
+                            <button class="bg-gray-800 text-white text-[10px] px-4 py-2 rounded-lg font-bold">✨
+                                50</button>
+                        </div>
+                        <div class="border p-4 rounded-xl flex justify-between items-center opacity-50">
+                            <div class="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-xl">🎬</div>
+                            <div class="flex-1 ml-4">
+                                <p class="text-xs font-bold">Movie Ticket</p>
+                                <p class="text-[10px] text-gray-500">Weekend Special</p>
+                            </div>
+                            <button class="bg-gray-400 text-white text-[10px] px-4 py-2 rounded-lg font-bold">✨
+                                150</button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const btn = document.getElementById('login-btn');
+            btn.innerText = "Connecting...";
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            // Artificial delay for UX feel
+            setTimeout(() => {
+                navTo('overview');
+            }, 600);
+        }
+
+        function navTo(screenId) {
+            // Switch layout from login to shell
+            document.getElementById('screen-login').classList.add('hide');
+            document.getElementById('app-shell').classList.remove('hide');
+
+            // Hide all content sections
+            const screens = document.querySelectorAll('.screen-content');
+            screens.forEach(s => s.classList.add('hide'));
+
+            // Show current screen
+            const target = document.getElementById('screen-' + screenId);
+            if (target) target.classList.remove('hide');
+
+            // Manage navigation button styles
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('border-b-2', 'border-black', 'text-black', 'font-bold');
+                link.classList.add('text-gray-400');
+            });
+
+            const activeNav = document.getElementById('nav-' + screenId);
+            activeNav.classList.add('border-b-2', 'border-black', 'text-black', 'font-bold');
+            activeNav.classList.remove('text-gray-400');
+        }
+    </script>
+</body>
+
+</html>
