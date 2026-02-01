@@ -120,7 +120,8 @@ I managed to complete 2/3 of my tasks, I will be focusing on getting the environ
 
 > _(Mention any difficulties or issues faced and how they were addressed)_
 
-- Challenge 1
+- Challenge 1:
+    - Realised that the html was not linked to my code
 - Challenge 2
 
 <br>
