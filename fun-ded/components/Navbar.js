@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 export default function Navbar({ activeTab, pageDots = 4, activeDot = 0 }) {
-    const tabs = ["Overview", "Transaction", "Goals", "Shop"];
+    const tabs = ["Overview", "Transactions", "Goals", "Shop"];
 
     return (
         <nav className="w-full pt-6 pb-2 bg-white sticky top-0 z-10">

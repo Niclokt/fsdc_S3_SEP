@@ -1,9 +1,10 @@
+// Login Page Component
+
 "use client";
 import { useState } from "react";
 import { signIn } from "../lib/supabase";
 import { useRouter } from "next/navigation";
 
-// Login Page Component
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -18,7 +19,7 @@ export default function LoginPage() {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
-            <h1 className="text-5xl font-bold mb-12 tracking-tighter">
+            <h1 className="text-5xl font-bold mb-12 tracking-tighter text-gray-600">
                 FUN-DED
             </h1>
             <form
@@ -28,18 +29,18 @@ export default function LoginPage() {
                 <input
                     type="email"
                     placeholder="Username (Email)"
-                    className="bg-gray-200 p-4 rounded-lg outline-none text-center"
+                    className="bg-gray-200 p-4 rounded-lg outline-none text-center text-gray-900"
                     onChange={(e) => setEmail(e.target.value)}
                 />
                 <input
                     type="password"
                     placeholder="Password"
-                    className="bg-gray-200 p-4 rounded-lg outline-none text-center"
+                    className="bg-gray-200 p-4 rounded-lg outline-none text-center text-gray-900"
                     onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                     type="submit"
-                    className="bg-gray-300 p-3 rounded-lg w-24 self-center font-medium hover:bg-gray-400"
+                    className="bg-gray-400 p-3 rounded-lg w-24 self-center font-medium hover:bg-gray-700"
                 >
                     Login
                 </button>

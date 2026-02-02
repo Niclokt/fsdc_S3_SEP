@@ -1,6 +1,7 @@
 // app/transactions/page.js
 "use client";
 import { useState, useEffect } from "react";
+import Navbar from "@/components/Navbar";
 import { supabase, fetchTransactions, deleteTransaction } from "@/lib/supabase";
 
 export default function TransactionPage() {
@@ -17,6 +18,7 @@ export default function TransactionPage() {
 
     return (
         <div className="max-w-4xl mx-auto p-4">
+            <Navbar activeTab="Transactions" />
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Left Side: New Transaction Form */}
                 <section className="flex-1 bg-gray-200 p-6 rounded-2xl h-fit">

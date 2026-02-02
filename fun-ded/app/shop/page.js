@@ -1,6 +1,7 @@
 // Shop Page Component
 
 "use client";
+import Navbar from "@/components/Navbar";
 import { useState } from "react";
 
 export default function ShopPage() {
@@ -16,6 +17,7 @@ export default function ShopPage() {
 
     return (
         <div className="max-w-md mx-auto p-4 text-center">
+            <Navbar activeTab="Shop" />
             <div className="flex justify-center gap-8 mb-8">
                 <span>🔥 365</span>
                 <span>✨ {points}</span>
