@@ -144,9 +144,17 @@ Reflection
 
 > _(List the key goals or tasks planned for this week)_
 
-1. Objective #1
-2. Objective #1
-3. Objective #1
+1. ✅ Connect database to project
+2. Setup Login authentication
+3. Start implementing features for Transactions
+    - Feature to filter transactions
+    - Feature to download csv files
+4. Start implementing features for Overview
+    - Figure out how to implement charts
+5. Implement Habits page
+6. Implement points system
+7. Implement Product Page
+8. Implement Product Redemption modal
 
 <br>
 
