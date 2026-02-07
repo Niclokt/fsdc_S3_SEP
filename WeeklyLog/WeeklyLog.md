@@ -146,6 +146,9 @@ Reflection
 
 1. ✅ Connect database to project
 2. Setup Login authentication
+    - How to automatically create userProfile data after user has signed up
+    - Reference
+        - [How to setup login/logout](https://youtu.be/WWwDL9G9xkU?si=EgFdBGp76VGZtxmy)
 3. Start implementing features for Transactions
     - Feature to filter transactions
     - Feature to download csv files
