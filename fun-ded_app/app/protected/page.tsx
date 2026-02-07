@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { InfoIcon } from "lucide-react";
 import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
 import { Suspense } from "react";
-import { LogoutButton } from "@/components/logout-button";
 
 async function UserDetails() {
   const supabase = await createClient();
