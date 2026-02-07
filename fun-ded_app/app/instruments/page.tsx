@@ -3,14 +3,14 @@ import { Suspense } from "react";
 
 async function CategoryData() {
   const supabase = await createClient();
-  const { data: categories } = await supabase.from("\"Category\"").select();
+  const { data: category } = await supabase.from("category").select();
 
-  return <pre>{JSON.stringify(categories, null, 2)}</pre>;
+  return <pre>{JSON.stringify(category, null, 2)}</pre>;
 }
 
 export default function Category() {
   return (
-    <Suspense fallback={<div>Loading categories...</div>}>
+    <Suspense fallback={<div>Loading category...</div>}>
       <CategoryData />
     </Suspense>
   );
