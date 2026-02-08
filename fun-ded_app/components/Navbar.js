@@ -12,10 +12,10 @@ export default function Navbar({ activeTab, pageDots = 4, activeDot = 0 }) {
                 {tabs.map((tab) => (
                     <Link
                         key={tab}
-                        href={`/${tab.toLowerCase()}`}
+                        href={`/account/${tab.toLowerCase()}`}
                         className={`text-lg md:text-xl transition-all ${
                             activeTab === tab
-                                ? "font-bold border-b-2 border-black pb-1"
+                                ? "font-bold text-gray-800 border-b-2 border-black pb-1"
                                 : "text-gray-500 hover:text-black"
                         }`}
                     >
