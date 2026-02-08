@@ -30,7 +30,7 @@ export const deleteTransaction = async (id) => {
 // Category CRUD Operations
 export const fetchCategories = async () => {
     return await supabase
-        .from("categories")
+        .from("category")
         .select("*")
-        .order("name", { ascending: true });
+        .order("Category", { ascending: true });
 };

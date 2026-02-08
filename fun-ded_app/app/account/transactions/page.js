@@ -16,11 +16,16 @@ export default function TransactionPage() {
     // Load Data
     useEffect(() => {
         const load = async () => {
-            const { data } = await fetchTransactions("current-user-id");
-            setList(data || []);
-            const { data: categoriesData } = await fetchCategories();
-            setCategories(categoriesData || []);
+            // Run both requests at the same time
+            const [transRes, catRes] = await Promise.all([
+                fetchTransactions("current-user-id"),
+                fetchCategories(),
+            ]);
+
+            setList(transRes.data || []);
+            setCategories(catRes.data || []);
         };
+        console.log("categories:" + JSON.stringify(categories, null, 2));
         load();
     }, []);
 
@@ -47,8 +52,11 @@ export default function TransactionPage() {
                                 >
                                     <option value="">Select Category</option>
                                     {categories.map((cat) => (
-                                        <option key={cat.id} value={cat.id}>
-                                            {cat.name}
+                                        <option
+                                            key={cat.Id}
+                                            value={cat.Category}
+                                        >
+                                            {cat.Category}
                                         </option>
                                     ))}
                                 </select>
