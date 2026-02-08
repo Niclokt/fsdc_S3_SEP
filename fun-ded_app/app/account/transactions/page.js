@@ -7,27 +7,34 @@ import {
     updateTransaction,
     deleteTransaction,
     fetchCategories,
+    fetchPaymentModes,
 } from "@/lib/supabase-client";
 
 export default function TransactionPage() {
     const [list, setList] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [paymentModes, setPaymentModes] = useState([]);
 
     // Load Data
     useEffect(() => {
         const load = async () => {
-            // Run both requests at the same time
-            const [transRes, catRes] = await Promise.all([
+            // Run all requests at the same time
+            const [transRes, catRes, payModeRes] = await Promise.all([
                 fetchTransactions("current-user-id"),
                 fetchCategories(),
+                fetchPaymentModes(),
             ]);
 
             setList(transRes.data || []);
             setCategories(catRes.data || []);
+            setPaymentModes(payModeRes.data || []);
         };
-        console.log("categories:" + JSON.stringify(categories, null, 2));
         load();
     }, []);
+
+    useEffect(() => {
+        console.log("payment modes loaded:", paymentModes);
+    }, [paymentModes]);
 
     return (
         <div className="max-w-4xl mx-auto p-4">
@@ -45,7 +52,24 @@ export default function TransactionPage() {
                             "Category",
                             "Payment Mode",
                         ].map((field) =>
-                            field === "Category" ? (
+                            field === "Payment Mode" ? (
+                                <select
+                                    key={field}
+                                    className="w-full p-4 bg-gray-400 rounded-xl"
+                                >
+                                    <option value="">
+                                        Select Payment Mode
+                                    </option>
+                                    {paymentModes.map((payMode) => (
+                                        <option
+                                            key={payMode.Id}
+                                            value={payMode.PaymentMode}
+                                        >
+                                            {payMode.PaymentMode}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : field === "Category" ? (
                                 <select
                                     key={field}
                                     className="w-full p-4 bg-gray-400 rounded-xl"

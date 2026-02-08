@@ -34,3 +34,11 @@ export const fetchCategories = async () => {
         .select("*")
         .order("Category", { ascending: true });
 };
+
+// PaymentMode CRUD Operations
+export const fetchPaymentModes = async () => {
+    return await supabase
+        .from("paymentMode")
+        .select("*")
+        .order("PaymentMode", { ascending: true });
+};
