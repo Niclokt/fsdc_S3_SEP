@@ -6,16 +6,20 @@ import {
     createTransaction,
     updateTransaction,
     deleteTransaction,
+    fetchCategories,
 } from "@/lib/supabase-client";
 
 export default function TransactionPage() {
     const [list, setList] = useState([]);
+    const [categories, setCategories] = useState([]);
 
     // Load Data
     useEffect(() => {
         const load = async () => {
             const { data } = await fetchTransactions("current-user-id");
             setList(data || []);
+            const { data: categoriesData } = await fetchCategories();
+            setCategories(categoriesData || []);
         };
         load();
     }, []);
@@ -25,7 +29,9 @@ export default function TransactionPage() {
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Left Side: New Transaction Form */}
                 <section className="flex-1 bg-gray-200 p-6 rounded-2xl h-fit">
-                    <h3 className="font-bold mb-4">New Transaction</h3>
+                    <h3 className="font-bold mb-4 text-gray-600">
+                        New Transaction
+                    </h3>
                     <div className="space-y-3">
                         {[
                             "Date",
@@ -33,13 +39,57 @@ export default function TransactionPage() {
                             "Description",
                             "Category",
                             "Payment Mode",
-                        ].map((field) => (
-                            <input
-                                key={field}
-                                placeholder={field}
-                                className="w-full p-4 bg-gray-400 rounded-xl placeholder-black"
-                            />
-                        ))}
+                        ].map((field) =>
+                            field === "Category" ? (
+                                <select
+                                    key={field}
+                                    className="w-full p-4 bg-gray-400 rounded-xl"
+                                >
+                                    <option value="">Select Category</option>
+                                    {categories.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    key={field}
+                                    type={
+                                        field === "Date"
+                                            ? "date"
+                                            : field === "Amount"
+                                              ? "number"
+                                              : "text"
+                                    }
+                                    step={
+                                        field === "Amount" ? "0.01" : undefined
+                                    }
+                                    placeholder={field}
+                                    maxLength={
+                                        field === "Description"
+                                            ? 300
+                                            : undefined
+                                    }
+                                    onChange={(e) => {
+                                        if (
+                                            field === "Amount" &&
+                                            e.target.value.includes(".")
+                                        ) {
+                                            const [integer, decimal] =
+                                                e.target.value.split(".");
+                                            if (decimal.length > 2) {
+                                                e.target.value = `${integer}.${decimal.slice(0, 2)}`;
+                                            }
+                                        }
+                                    }}
+                                    className="w-full p-4 bg-gray-400 rounded-xl placeholder-black"
+                                />
+                            ),
+                        )}
+                        <button className="w-full bg-black text-white p-4 rounded-xl mt-2">
+                            Add Transaction
+                        </button>
                     </div>
                 </section>
 

@@ -6,6 +6,7 @@ export const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 );
 
+// Transaction CRUD Operations
 export const fetchTransactions = async (userId) => {
     return await supabase
         .from("transactions")
@@ -24,4 +25,12 @@ export const updateTransaction = async (id, updates) => {
 
 export const deleteTransaction = async (id) => {
     return await supabase.from("transactions").delete().eq("id", id);
+};
+
+// Category CRUD Operations
+export const fetchCategories = async () => {
+    return await supabase
+        .from("categories")
+        .select("*")
+        .order("name", { ascending: true });
 };
