@@ -9,22 +9,22 @@ export const supabase = createClient(
 // Transaction CRUD Operations
 export const fetchTransactions = async (userId) => {
     return await supabase
-        .from("transactions")
+        .from("transaction")
         .select("*")
         .eq("user_id", userId)
         .order("date", { ascending: false });
 };
 
 export const createTransaction = async (entry) => {
-    return await supabase.from("transactions").insert([entry]);
+    return await supabase.from("transaction").insert([entry]).select();
 };
 
 export const updateTransaction = async (id, updates) => {
-    return await supabase.from("transactions").update(updates).eq("id", id);
+    return await supabase.from("transaction").update(updates).eq("id", id);
 };
 
 export const deleteTransaction = async (id) => {
-    return await supabase.from("transactions").delete().eq("id", id);
+    return await supabase.from("transaction").delete().eq("id", id);
 };
 
 // Category CRUD Operations

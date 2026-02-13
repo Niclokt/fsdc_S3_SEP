@@ -1,26 +1,47 @@
-// app/transactions/page.js
 "use client";
 import { useState, useEffect } from "react";
 import {
+    supabase,
     fetchTransactions,
-    createTransaction,
-    updateTransaction,
-    deleteTransaction,
+    createTransaction, // Used for saving
     fetchCategories,
     fetchPaymentModes,
+    deleteTransaction,
 } from "@/lib/supabase-client";
 
 export default function TransactionPage() {
     const [list, setList] = useState([]);
     const [categories, setCategories] = useState([]);
     const [paymentModes, setPaymentModes] = useState([]);
+    const [userId, setUserId] = useState(null);
 
-    // Load Data
+    // Get Current User ID
     useEffect(() => {
+        const getUser = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            setUserId(user?.id);
+        };
+        getUser();
+    }, []);
+
+    // 1. New Form State
+    const [formData, setFormData] = useState({
+        date: new Date().toISOString().split("T")[0], // Defaults to today
+        amount: "",
+        description: "",
+        category: "",
+        paymentMode: "",
+    });
+
+    // Load Data - Now watches for userId to change from null to an actual ID
+    useEffect(() => {
+        if (!userId) return; // Don't run if we don't have a user yet
+
         const load = async () => {
-            // Run all requests at the same time
             const [transRes, catRes, payModeRes] = await Promise.all([
-                fetchTransactions("current-user-id"),
+                fetchTransactions(userId),
                 fetchCategories(),
                 fetchPaymentModes(),
             ]);
@@ -30,102 +51,150 @@ export default function TransactionPage() {
             setPaymentModes(payModeRes.data || []);
         };
         load();
-    }, []);
+    }, [userId]); // <--- The dependency array now includes userId
 
-    useEffect(() => {
-        console.log("payment modes loaded:", paymentModes);
-    }, [paymentModes]);
+    // 2. Handle Input Changes
+    const handleChange = (field, value) => {
+        // Apply your decimal logic for amounts
+        if (field === "amount" && value.includes(".")) {
+            const [integer, decimal] = value.split(".");
+            if (decimal.length > 2) value = `${integer}.${decimal.slice(0, 2)}`;
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    // 3. Submit to Supabase
+    const handleAdd = async () => {
+        if (!formData.amount || !formData.description)
+            return alert("For goodness sake, Fill in the details!");
+
+        // EXPLICIT MAPPING:
+        // Left side = Supabase Column Name
+        // Right side = React State Value
+        const entryToSave = {
+            //TransactionId: crypto.randomUUID(), // Unique ID for the transaction
+            CreatedDate:
+                new Date().toISOString().replace("T", " ").split(".")[0] +
+                "+00",
+            UserId: userId,
+            TransactionDate: formData.date,
+            Amount: parseFloat(formData.amount), // Ensuring type safety
+            Description: formData.description,
+            DateModified:
+                new Date().toISOString().replace("T", " ").split(".")[0] +
+                "+00",
+            Category: formData.category,
+            PaymentMode: formData.paymentMode, // Mapping 'paymentMode' to 'payment_method'
+        };
+
+        // Debugging step
+        console.log("Current User ID:", userId);
+        console.log("Entry to Save:", entryToSave);
+
+        // We no longer manually attach userId here!
+        const { data, error } = await createTransaction(entryToSave);
+
+        // Debugging step
+        console.log("Supabase Response Data:", data);
+        console.log("Supabase Response Error:", error);
+
+        if (error) {
+            console.error("Error saving:", error);
+        } else {
+            // Update UI list immediately and reset form
+            setList([data[0], ...list]);
+            setFormData({
+                date: new Date().toISOString().split("T")[0],
+                amount: "",
+                description: "",
+                category: "",
+                paymentMode: "",
+            });
+        }
+    };
 
     return (
         <div className="max-w-4xl mx-auto p-4">
             <div className="flex flex-col md:flex-row gap-8">
-                {/* Left Side: New Transaction Form */}
                 <section className="flex-1 bg-gray-200 p-6 rounded-2xl h-fit">
                     <h3 className="font-bold mb-4 text-gray-600">
                         New Transaction
                     </h3>
                     <div className="space-y-3">
+                        {/* Mapping with Controlled Logic */}
                         {[
-                            "Date",
-                            "Amount",
-                            "Description",
-                            "Category",
-                            "Payment Mode",
+                            { label: "Date", key: "date", type: "date" },
+                            { label: "Amount", key: "amount", type: "number" },
+                            {
+                                label: "Description",
+                                key: "description",
+                                type: "text",
+                            },
+                            {
+                                label: "Category",
+                                key: "category",
+                                type: "select",
+                                options: categories,
+                            },
+                            {
+                                label: "Payment Mode",
+                                key: "paymentMode",
+                                type: "select",
+                                options: paymentModes,
+                            },
                         ].map((field) =>
-                            field === "Payment Mode" ? (
+                            field.type === "select" ? (
                                 <select
-                                    key={field}
+                                    key={field.key}
+                                    value={formData[field.key]}
+                                    onChange={(e) =>
+                                        handleChange(field.key, e.target.value)
+                                    }
                                     className="w-full p-4 bg-gray-400 rounded-xl"
                                 >
                                     <option value="">
-                                        Select Payment Mode
+                                        Select {field.label}
                                     </option>
-                                    {paymentModes.map((payMode) => (
+                                    {field.options.map((opt) => (
                                         <option
-                                            key={payMode.Id}
-                                            value={payMode.PaymentMode}
+                                            key={opt.Id}
+                                            value={
+                                                opt[
+                                                    field.label.replace(" ", "")
+                                                ]
+                                            }
                                         >
-                                            {payMode.PaymentMode}
-                                        </option>
-                                    ))}
-                                </select>
-                            ) : field === "Category" ? (
-                                <select
-                                    key={field}
-                                    className="w-full p-4 bg-gray-400 rounded-xl"
-                                >
-                                    <option value="">Select Category</option>
-                                    {categories.map((cat) => (
-                                        <option
-                                            key={cat.Id}
-                                            value={cat.Category}
-                                        >
-                                            {cat.Category}
+                                            {opt[field.label.replace(" ", "")]}
                                         </option>
                                     ))}
                                 </select>
                             ) : (
                                 <input
-                                    key={field}
-                                    type={
-                                        field === "Date"
-                                            ? "date"
-                                            : field === "Amount"
-                                              ? "number"
-                                              : "text"
+                                    key={field.key}
+                                    type={field.type}
+                                    placeholder={field.label}
+                                    value={formData[field.key]}
+                                    onChange={(e) =>
+                                        handleChange(field.key, e.target.value)
                                     }
-                                    step={
-                                        field === "Amount" ? "0.01" : undefined
-                                    }
-                                    placeholder={field}
-                                    maxLength={
-                                        field === "Description"
-                                            ? 300
-                                            : undefined
-                                    }
-                                    onChange={(e) => {
-                                        if (
-                                            field === "Amount" &&
-                                            e.target.value.includes(".")
-                                        ) {
-                                            const [integer, decimal] =
-                                                e.target.value.split(".");
-                                            if (decimal.length > 2) {
-                                                e.target.value = `${integer}.${decimal.slice(0, 2)}`;
-                                            }
-                                        }
-                                    }}
                                     className="w-full p-4 bg-gray-400 rounded-xl placeholder-black"
                                 />
                             ),
                         )}
-                        <button className="w-full bg-black text-white p-4 rounded-xl mt-2">
+                        <button
+                            onClick={handleAdd}
+                            className="w-full bg-black text-white p-4 rounded-xl mt-2 active:scale-95 transition-transform"
+                        >
                             Add Transaction
                         </button>
                     </div>
                 </section>
 
-                {/* Right Side: Transaction History with Swipe-to-Edit */}
+                {/* Right Side Remains mostly same, but ensures list updates work */}
                 <section className="flex-[1.5]">
                     <h3 className="font-bold mb-4">Transaction History</h3>
                     <div className="space-y-4">
@@ -134,21 +203,24 @@ export default function TransactionPage() {
                                 key={item.id}
                                 className="relative group overflow-hidden rounded-xl"
                             >
-                                {/* Swipe Action Layer (Hidden by default, revealed on hover/swipe) */}
                                 <div className="absolute right-0 top-0 h-full flex items-center gap-2 pr-4 transition-transform translate-x-full group-hover:translate-x-0">
                                     <button className="bg-white p-2 rounded shadow">
                                         ✎
                                     </button>
                                     <button
-                                        onClick={() =>
-                                            deleteTransaction(item.id)
-                                        }
+                                        onClick={async () => {
+                                            await deleteTransaction(item.id);
+                                            setList(
+                                                list.filter(
+                                                    (t) => t.id !== item.id,
+                                                ),
+                                            );
+                                        }}
                                         className="bg-white p-2 rounded shadow"
                                     >
                                         🗑
                                     </button>
                                 </div>
-                                {/* Main Card */}
                                 <div className="bg-gray-400 p-4 flex justify-between items-center transition-transform group-hover:-translate-x-24">
                                     <div>
                                         <p className="text-xs">{item.date}</p>
