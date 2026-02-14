@@ -70,7 +70,7 @@ export default function TransactionPage() {
     };
 
     const handleEditClick = (item) => {
-        setEditingId(item.id); // Use 'id' instead of 'TransactionId'
+        setEditingId(item.TransactionId);
         setFormData({
             date: item.TransactionDate,
             amount: item.Amount.toString(),
@@ -115,7 +115,7 @@ export default function TransactionPage() {
                 result = await supabase
                     .from("transaction")
                     .update(entryToSave)
-                    .eq("id", editingId)
+                    .eq("TransactionId", editingId)
                     .select();
             } else {
                 // Create new record
@@ -127,7 +127,11 @@ export default function TransactionPage() {
             if (error) throw error;
 
             if (editingId) {
-                setList(list.map((t) => (t.id === editingId ? data[0] : t)));
+                setList(
+                    list.map((t) =>
+                        t.TransactionId === editingId ? data[0] : t,
+                    ),
+                );
                 resetForm();
             } else {
                 setList([data[0], ...list]);
@@ -143,7 +147,7 @@ export default function TransactionPage() {
         try {
             const { error } = await deleteTransaction(id);
             if (error) throw error;
-            setList(list.filter((t) => t.id !== id));
+            setList(list.filter((t) => t.TransactionId !== id));
         } catch (error) {
             console.error("Error deleting:", error);
             alert("Error deleting transaction: " + error.message);
@@ -151,16 +155,17 @@ export default function TransactionPage() {
     };
 
     // Memoize grouped transactions
+    //Refactored logic to group by Year, then by Month
     const groupedTransactions = useMemo(() => {
         return list.reduce((groups, transaction) => {
             const date = new Date(transaction.TransactionDate);
-            const month = date.toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-            });
+            const year = date.getFullYear();
+            const month = date.toLocaleString("default", { month: "long" });
 
-            if (!groups[month]) groups[month] = [];
-            groups[month].push(transaction);
+            if (!groups[year]) groups[year] = {};
+            if (!groups[year][month]) groups[year][month] = [];
+
+            groups[year][month].push(transaction);
             return groups;
         }, {});
     }, [list]);
@@ -256,156 +261,194 @@ export default function TransactionPage() {
                         )}
                     </div>
                 </section>
-
                 {/* Transaction History Section */}
-                <section className="flex-[1.5]">
+                <section className="flex-[1.5] h-[calc(100vh-120px)]">
                     <h3 className="font-bold mb-4">Transaction History</h3>
-                    <div className="space-y-6">
-                        {Object.entries(groupedTransactions)
-                            .sort(
-                                ([monthA], [monthB]) =>
-                                    new Date(monthB) - new Date(monthA),
-                            )
-                            .map(([month, transactions]) => {
-                                const monthlyTotal = transactions.reduce(
-                                    (sum, item) => sum + Number(item.Amount),
-                                    0,
-                                );
-                                const isOverBudget =
-                                    monthlyTotal > BUDGET_LIMIT;
-                                const progress = Math.min(
-                                    (monthlyTotal / BUDGET_LIMIT) * 100,
-                                    100,
-                                );
+                    <section className="flex-[1.5] h-[calc(100vh-120px)] overflow-y-auto pr-2 hide-scrollbar">
+                        {/* SCROLLABLE CONTAINER: Minimalist UI */}
+                        <div className="flex-1 overflow-y-auto pr-2 space-y-8 scrollbar-thin scrollbar-thumb-gray-400/50 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 transition-colors">
+                            {Object.entries(groupedTransactions)
+                                .sort(([yearA], [yearB]) => yearB - yearA) // Sort Years Descending
+                                .map(([year, months]) => (
+                                    <div key={year} className="space-y-4">
+                                        {/* Year Separator */}
+                                        <div className="flex items-center gap-4">
+                                            <div className="h-px bg-gray-300 flex-1" />
+                                            <span className="text-xl font-black text-gray-400">
+                                                {year}
+                                            </span>
+                                            <div className="h-px bg-gray-300 flex-1" />
+                                        </div>
 
-                                return (
-                                    <div key={month} className="space-y-2">
-                                        {/* Month Header */}
-                                        <button
-                                            onClick={() =>
-                                                setExpandedMonths((prev) => ({
-                                                    ...prev,
-                                                    [month]: !prev[month],
-                                                }))
-                                            }
-                                            className={`w-full flex flex-col p-3 rounded-xl font-bold transition-all shadow-sm ${
-                                                isOverBudget
-                                                    ? "bg-red-100 text-red-700 hover:bg-red-200"
-                                                    : "bg-green-100 text-green-700 hover:bg-green-200"
-                                            }`}
-                                        >
-                                            <div className="w-full flex justify-between items-center mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span>
-                                                        {expandedMonths[month]
-                                                            ? "▲"
-                                                            : "▼"}
-                                                    </span>
-                                                    <span>{month}</span>
-                                                </div>
-                                                <div className="flex flex-col text-right">
-                                                    <span className="text-sm opacity-70 font-normal">
-                                                        Monthly Total
-                                                    </span>
-                                                    <span className="text-lg">
-                                                        $
-                                                        {monthlyTotal.toFixed(
-                                                            2,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            </div>
+                                        {Object.entries(months)
+                                            .sort(
+                                                ([monthA], [monthB]) =>
+                                                    new Date(
+                                                        `${monthB} 1, ${year}`,
+                                                    ) -
+                                                    new Date(
+                                                        `${monthA} 1, ${year}`,
+                                                    ),
+                                            )
+                                            .map(([month, transactions]) => {
+                                                const monthKey = `${month}-${year}`;
+                                                const monthlyTotal =
+                                                    transactions.reduce(
+                                                        (sum, item) =>
+                                                            sum +
+                                                            Number(item.Amount),
+                                                        0,
+                                                    );
+                                                const isOverBudget =
+                                                    monthlyTotal > BUDGET_LIMIT;
+                                                const progress = Math.min(
+                                                    (monthlyTotal /
+                                                        BUDGET_LIMIT) *
+                                                        100,
+                                                    100,
+                                                );
 
-                                            {/* Progress Bar */}
-                                            <div className="w-full h-2 bg-black/10 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full transition-all duration-500 ${
-                                                        isOverBudget
-                                                            ? "bg-red-500"
-                                                            : "bg-green-500"
-                                                    }`}
-                                                    style={{
-                                                        width: `${progress}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </button>
-
-                                        {/* Transaction List */}
-                                        {expandedMonths[month] && (
-                                            <div className="mt-3 space-y-3 pl-2 border-l-2 border-gray-200">
-                                                {transactions.map((item) => (
+                                                return (
                                                     <div
-                                                        key={item.id}
-                                                        className="relative group overflow-hidden rounded-xl"
+                                                        key={monthKey}
+                                                        className="space-y-2"
                                                     >
-                                                        {/* Action Buttons */}
-                                                        <div className="absolute right-0 top-0 h-full flex items-center gap-2 pr-4 transition-transform translate-x-full group-hover:translate-x-0">
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleEditClick(
-                                                                        item,
-                                                                    )
-                                                                }
-                                                                className="bg-white p-2 rounded shadow hover:bg-gray-100 text-blue-600"
-                                                                title="Edit transaction"
-                                                            >
-                                                                ✎
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handleDelete(
-                                                                        item.id,
-                                                                    )
-                                                                }
-                                                                className="bg-white p-2 rounded shadow hover:bg-gray-100 text-red-600"
-                                                                title="Delete transaction"
-                                                            >
-                                                                🗑
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Transaction Card */}
-                                                        <div className="bg-gray-400 p-4 flex justify-between items-center transition-transform group-hover:-translate-x-24">
-                                                            <div>
-                                                                <p className="text-[10px] text-black-600 uppercase tracking-wider">
-                                                                    {
-                                                                        item.TransactionDate
-                                                                    }
-                                                                </p>
-                                                                <p className="font-bold text-black-900">
-                                                                    {
-                                                                        item.Description
-                                                                    }
-                                                                </p>
-                                                                <div className="flex gap-2 mt-1">
-                                                                    <span className="text-[10px] bg-pink-500 text-white px-2 py-0.5 rounded-full">
-                                                                        {
-                                                                            item.Category
-                                                                        }
+                                                        {/* Month Header */}
+                                                        <button
+                                                            onClick={() =>
+                                                                setExpandedMonths(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        [monthKey]:
+                                                                            !prev[
+                                                                                monthKey
+                                                                            ],
+                                                                    }),
+                                                                )
+                                                            }
+                                                            className={`w-full flex flex-col p-3 rounded-xl font-bold transition-all shadow-sm ${
+                                                                isOverBudget
+                                                                    ? "bg-red-100 text-red-700 hover:bg-red-200"
+                                                                    : "bg-green-100 text-green-700 hover:bg-green-200"
+                                                            }`}
+                                                        >
+                                                            <div className="w-full flex justify-between items-center mb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span>
+                                                                        {expandedMonths[
+                                                                            monthKey
+                                                                        ]
+                                                                            ? "▲"
+                                                                            : "▼"}
                                                                     </span>
-                                                                    <span className="text-[10px] bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full">
-                                                                        {
-                                                                            item.PaymentMode
-                                                                        }
+                                                                    <span>
+                                                                        {month}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex flex-col text-right">
+                                                                    <span className="text-xs opacity-70 font-normal">
+                                                                        Monthly
+                                                                        Total
+                                                                    </span>
+                                                                    <span className="text-lg">
+                                                                        $
+                                                                        {monthlyTotal.toFixed(
+                                                                            2,
+                                                                        )}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <span className="text-xl font-bold text-black-900">
-                                                                $
-                                                                {Number(
-                                                                    item.Amount,
-                                                                ).toFixed(2)}
-                                                            </span>
-                                                        </div>
+                                                            <div className="w-full h-2 bg-black/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full transition-all duration-500 ${isOverBudget ? "bg-red-500" : "bg-green-500"}`}
+                                                                    style={{
+                                                                        width: `${progress}%`,
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </button>
+
+                                                        {/* Transaction List */}
+                                                        {expandedMonths[
+                                                            monthKey
+                                                        ] && (
+                                                            <div className="mt-3 space-y-3 pl-2 border-l-2 border-gray-200">
+                                                                {transactions.map(
+                                                                    (item) => (
+                                                                        <div
+                                                                            key={
+                                                                                item.TransactionId
+                                                                            }
+                                                                            className="relative group overflow-hidden rounded-xl"
+                                                                        >
+                                                                            <div className="absolute right-0 top-0 h-full flex items-center gap-2 pr-4 transition-transform translate-x-full group-hover:translate-x-0">
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        handleEditClick(
+                                                                                            item,
+                                                                                        )
+                                                                                    }
+                                                                                    className="bg-white p-2 rounded shadow hover:bg-gray-100 text-blue-600"
+                                                                                >
+                                                                                    ✎
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        handleDelete(
+                                                                                            item.TransactionId,
+                                                                                        )
+                                                                                    }
+                                                                                    className="bg-white p-2 rounded shadow hover:bg-gray-100 text-red-600"
+                                                                                >
+                                                                                    🗑
+                                                                                </button>
+                                                                            </div>
+                                                                            <div className="bg-gray-400 p-4 flex justify-between items-center transition-transform group-hover:-translate-x-24">
+                                                                                <div>
+                                                                                    <p className="text-[10px] text-black-600 uppercase tracking-wider">
+                                                                                        {
+                                                                                            item.TransactionDate
+                                                                                        }
+                                                                                    </p>
+                                                                                    <p className="font-bold text-black-900">
+                                                                                        {
+                                                                                            item.Description
+                                                                                        }
+                                                                                    </p>
+                                                                                    <div className="flex gap-2 mt-1">
+                                                                                        <span className="text-[10px] bg-pink-500 text-white px-2 py-0.5 rounded-full">
+                                                                                            {
+                                                                                                item.Category
+                                                                                            }
+                                                                                        </span>
+                                                                                        <span className="text-[10px] bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full">
+                                                                                            {
+                                                                                                item.PaymentMode
+                                                                                            }
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <span className="text-xl font-bold text-black-900">
+                                                                                    $
+                                                                                    {Number(
+                                                                                        item.Amount,
+                                                                                    ).toFixed(
+                                                                                        2,
+                                                                                    )}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    ),
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                );
+                                            })}
                                     </div>
-                                );
-                            })}
-                    </div>
+                                ))}
+                        </div>
+                    </section>
                 </section>
             </div>
         </div>

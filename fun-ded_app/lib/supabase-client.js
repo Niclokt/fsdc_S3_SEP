@@ -20,11 +20,15 @@ export const createTransaction = async (entry) => {
 };
 
 export const updateTransaction = async (id, updates) => {
-    return await supabase.from("transaction").update(updates).eq("id", id);
+    return await supabase
+        .from("transaction")
+        .update(updates)
+        .eq("TransactionId", id)
+        .select();
 };
 
 export const deleteTransaction = async (id) => {
-    return await supabase.from("transaction").delete().eq("id", id);
+    return await supabase.from("transaction").delete().eq("TransactionId", id);
 };
 
 // Category CRUD Operations

@@ -66,3 +66,39 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* app/globals.css */
+
+@layer utilities {
+  /* Combined Scrollbar Utilities */
+  .hide-scrollbar {
+    /* Firefox support */
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+
+  .hide-scrollbar:hover {
+    /* Firefox: thumb color | track color */
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
+
+  /* Chrome, Safari, and Edge support */
+  .hide-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar-track {
+    background: transparent; 
+  }
+
+  .hide-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent; 
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+
+  .hide-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.5); /* gray-400 at 50% opacity */
+  }
+}
