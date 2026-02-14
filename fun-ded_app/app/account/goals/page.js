@@ -122,7 +122,9 @@ export default function GoalsPage() {
                 {loading ? (
                     <div className="flex items-center gap-2 animate-pulse">
                         <span className="text-2xl">🔥</span>
-                        <span className="text-3xl font-bold italic text-gray-400">-</span>
+                        <span className="text-3xl font-bold italic text-gray-400">
+                            -
+                        </span>
                     </div>
                 ) : (
                     <StreakDisplay count={streakCount} />

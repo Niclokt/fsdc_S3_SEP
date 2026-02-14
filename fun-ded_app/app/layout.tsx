@@ -25,8 +25,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // suppressHydrationWarning here handles theme flickering
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body 
+        className={`${geistSans.className} antialiased`}
+        // suppressHydrationWarning here handles Grammarly/extension attributes
+        suppressHydrationWarning={true} 
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

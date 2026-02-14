@@ -7,10 +7,14 @@ import {
     Bar,
     LineChart,
     Line,
+    PieChart,
+    Pie,
+    Cell,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
+    Legend,
     ResponsiveContainer,
 } from "recharts";
 import { supabase } from "@/lib/supabase-client";
@@ -36,19 +40,32 @@ const getPreviousMonth = () => {
     return { startOfMonth, endOfMonth };
 };
 
-// Aggregate spending data by day
-const aggregateByDay = (transactions) => {
+// Aggregate spending data by day (sorted ascending, includes all 14 days)
+const aggregateByDay = (transactions, startDate) => {
     const dayMap = new Map();
     transactions.forEach((tx) => {
         const date = new Date(tx.TransactionDate).toLocaleDateString();
         dayMap.set(date, (dayMap.get(date) || 0) + parseFloat(tx.Amount || 0));
     });
-    return Array.from(dayMap, ([date, amount]) => ({ day: date, amount }));
+
+    // Generate all 14 days from startDate
+    const allDays = [];
+    for (let i = 0; i < 14; i++) {
+        const date = new Date(startDate);
+        date.setDate(date.getDate() + i);
+        const dateStr = date.toLocaleDateString();
+        allDays.push({
+            day: dateStr,
+            amount: dayMap.get(dateStr) || 0,
+        });
+    }
+    return allDays;
 };
 
-// Aggregate spending data by month
+// Aggregate spending data by month (sorted ascending)
 const aggregateByMonth = (transactions) => {
     const monthMap = new Map();
+    const monthKeys = new Map();
     transactions.forEach((tx) => {
         const date = new Date(tx.TransactionDate);
         const monthKey = date.toLocaleDateString("en-US", {
@@ -59,13 +76,24 @@ const aggregateByMonth = (transactions) => {
             monthKey,
             (monthMap.get(monthKey) || 0) + parseFloat(tx.Amount || 0),
         );
+        monthKeys.set(
+            monthKey,
+            new Date(date.getFullYear(), date.getMonth(), 1).getTime(),
+        );
     });
-    return Array.from(monthMap, ([month, amount]) => ({ month, amount }));
+    return Array.from(monthMap, ([month, amount]) => ({
+        month,
+        amount,
+        sortKey: monthKeys.get(month),
+    }))
+        .sort((a, b) => a.sortKey - b.sortKey)
+        .map(({ month, amount }) => ({ month, amount }));
 };
 
-// Aggregate spending data by week
+// Aggregate spending data by week (sorted ascending)
 const aggregateByWeek = (transactions) => {
     const weekMap = new Map();
+    const weekKeys = new Map();
     transactions.forEach((tx) => {
         const date = new Date(tx.TransactionDate);
         const weekNum = Math.ceil(date.getDate() / 7);
@@ -74,8 +102,31 @@ const aggregateByWeek = (transactions) => {
             weekKey,
             (weekMap.get(weekKey) || 0) + parseFloat(tx.Amount || 0),
         );
+        weekKeys.set(weekKey, weekNum);
     });
-    return Array.from(weekMap, ([week, amount]) => ({ week, amount }));
+    return Array.from(weekMap, ([week, amount]) => ({
+        week,
+        amount,
+        sortKey: weekKeys.get(week),
+    }))
+        .sort((a, b) => a.sortKey - b.sortKey)
+        .map(({ week, amount }) => ({ week, amount }));
+};
+
+// Aggregate spending data by category (for pie chart)
+const aggregateByCategory = (transactions) => {
+    const categoryMap = new Map();
+    transactions.forEach((tx) => {
+        const category = tx.Category || "Uncategorized";
+        categoryMap.set(
+            category,
+            (categoryMap.get(category) || 0) + parseFloat(tx.Amount || 0),
+        );
+    });
+    return Array.from(categoryMap, ([name, value]) => ({
+        name,
+        value: parseFloat(value.toFixed(2)),
+    }));
 };
 
 // Memoized chart components
@@ -85,8 +136,21 @@ const SpendingBarChart = memo(({ data = [] }) => (
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="day" tick={{ fontSize: 12 }} />
             <YAxis />
-            <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
-            <Bar dataKey="amount" fill="#3b82f6" isAnimationActive={false} />
+            <Tooltip
+                contentStyle={{
+                    backgroundColor: "#1f2937",
+                    borderRadius: "12px",
+                    border: "none",
+                }}
+                itemStyle={{ color: "#fff" }}
+                formatter={(value) => `$${value.toFixed(2)}`}
+            />
+            <Bar
+                dataKey="amount"
+                fill="#3b82f6"
+                isAnimationActive={false}
+                radius={[8, 8, 0, 0]}
+            />
         </BarChart>
     </ResponsiveContainer>
 ));
@@ -125,7 +189,15 @@ const MomChart = memo(({ data = [] }) => (
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" tick={{ fontSize: 12 }} />
             <YAxis />
-            <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+            <Tooltip
+                contentStyle={{
+                    backgroundColor: "#1f2937",
+                    borderRadius: "12px",
+                    border: "none",
+                }}
+                itemStyle={{ color: "#fff" }}
+                formatter={(value) => `$${value.toFixed(2)}`}
+            />
             <Line
                 type="monotone"
                 dataKey="amount"
@@ -145,7 +217,15 @@ const WowChart = memo(({ data = [] }) => (
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="week" tick={{ fontSize: 12 }} />
             <YAxis />
-            <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+            <Tooltip
+                contentStyle={{
+                    backgroundColor: "#1f2937",
+                    borderRadius: "12px",
+                    border: "none",
+                }}
+                itemStyle={{ color: "#fff" }}
+                formatter={(value) => `$${value.toFixed(2)}`}
+            />
             <Line
                 type="monotone"
                 dataKey="amount"
@@ -159,11 +239,52 @@ const WowChart = memo(({ data = [] }) => (
 
 WowChart.displayName = "WowChart";
 
+// Color palette for pie chart
+const COLORS = [
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#ec4899",
+    "#14b8a6",
+    "#f97316",
+];
+
+const CategoryPieChart = memo(({ data = [] }) => (
+    <ResponsiveContainer width="100%" height={250}>
+        <PieChart>
+            <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, value }) => `${name}: $${value.toFixed(2)}`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                isAnimationActive={false}
+            >
+                {data.map((_, index) => (
+                    <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                    />
+                ))}
+            </Pie>
+            <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+        </PieChart>
+    </ResponsiveContainer>
+));
+
+CategoryPieChart.displayName = "CategoryPieChart";
+
 export default function OverviewPage() {
     const [spending14Days, setSpending14Days] = useState([]);
     const [budgetSpent, setBudgetSpent] = useState(0);
     const [momData, setMomData] = useState([]);
     const [wowData, setWowData] = useState([]);
+    const [categoryData, setCategoryData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -185,7 +306,7 @@ export default function OverviewPage() {
                 // Fetch all transactions for the user
                 const { data: allTransactions, error } = await supabase
                     .from("transaction")
-                    .select("TransactionDate, Amount")
+                    .select("TransactionDate, Amount, Category")
                     .eq("UserId", userId)
                     .order("TransactionDate", { ascending: false });
 
@@ -196,13 +317,13 @@ export default function OverviewPage() {
                     return;
                 }
 
-                // Filter for past 14 days
+                // Filter for past 14 days (ascending order left to right)
                 const { start: start14 } = getDateRange(14);
                 const last14Days = allTransactions.filter((tx) => {
                     const txDate = new Date(tx.TransactionDate);
                     return txDate >= start14;
                 });
-                setSpending14Days(aggregateByDay(last14Days));
+                setSpending14Days(aggregateByDay(last14Days, start14));
 
                 // Calculate current month spending
                 const { startOfMonth, endOfMonth } = getCurrentMonth();
@@ -216,7 +337,10 @@ export default function OverviewPage() {
                 );
                 setBudgetSpent(currentMonthSpent);
 
-                // Month-on-month comparison (last 6 months)
+                // Category breakdown for current month
+                setCategoryData(aggregateByCategory(currentMonthTx));
+
+                // Month-on-month comparison (last 6 months, ascending order)
                 const sixMonthsAgo = new Date();
                 sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
                 sixMonthsAgo.setDate(1);
@@ -227,7 +351,7 @@ export default function OverviewPage() {
                 });
                 setMomData(aggregateByMonth(last6Months));
 
-                // Week-on-week comparison (current month only)
+                // Week-on-week comparison (current month only, ascending order)
                 setWowData(aggregateByWeek(currentMonthTx));
 
                 setLoading(false);
@@ -242,12 +366,13 @@ export default function OverviewPage() {
 
     if (loading) {
         return (
-            <main className="max-w-4xl mx-auto p-4">
+            <main className="max-w-6xl mx-auto p-4">
                 <div className="mt-8">
                     <h2 className="text-2xl">Hello,</h2>
                     <h1 className="text-4xl font-bold">Sohee</h1>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    <div className="md:col-span-2 bg-gray-200 p-6 rounded-2xl animate-pulse h-72" />
                     {[...Array(4)].map((_, i) => (
                         <div
                             key={i}
@@ -260,17 +385,26 @@ export default function OverviewPage() {
     }
 
     return (
-        <main className="max-w-4xl mx-auto p-4">
+        <main className="max-w-6xl mx-auto p-4">
             <div className="mt-8">
                 <h2 className="text-2xl">Hello,</h2>
                 <h1 className="text-4xl font-bold">Sohee</h1>
             </div>
 
-            {/* Grid Layout: Stacks on Mobile, 2x2 on Desktop */}
+            {/* Grid Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                {/* Row 1: 14-Day Spending (spans 2 columns) */}
+                <div className="md:col-span-2">
+                    <DashboardCard
+                        title="Spending Over Past 14 Days"
+                        component={<SpendingBarChart data={spending14Days} />}
+                    />
+                </div>
+
+                {/* Row 2: Category Pie Chart & Budget Progress */}
                 <DashboardCard
-                    title="Spending Over Past 14 Days"
-                    component={<SpendingBarChart data={spending14Days} />}
+                    title="Spending Breakdown by Category (Current Month)"
+                    component={<CategoryPieChart data={categoryData} />}
                 />
                 <DashboardCard
                     title="Current Month Budget Balance"
@@ -278,6 +412,8 @@ export default function OverviewPage() {
                         <BudgetProgressCard spent={budgetSpent} budget={1500} />
                     }
                 />
+
+                {/* Row 3: MoM & WoW */}
                 <DashboardCard
                     title="Month on Month Spending"
                     component={<MomChart data={momData} />}
