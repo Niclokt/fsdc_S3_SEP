@@ -1,3 +1,4 @@
+// Grouped list without TotalSpent calculation in each month's header
 "use client";
 import { useState, useEffect } from "react";
 import {
@@ -6,7 +7,6 @@ import {
     createTransaction, // Used for saving
     fetchCategories,
     fetchPaymentModes,
-    updateTransaction,
     deleteTransaction,
 } from "@/lib/supabase-client";
 
@@ -15,7 +15,6 @@ export default function TransactionPage() {
     const [categories, setCategories] = useState([]);
     const [paymentModes, setPaymentModes] = useState([]);
     const [userId, setUserId] = useState(null);
-    const [editingId, setEditingId] = useState(null);
 
     // Get Current User ID
     useEffect(() => {
@@ -48,14 +47,7 @@ export default function TransactionPage() {
                 fetchPaymentModes(),
             ]);
 
-            // SORTING LOGIC: Newest Year/Month first
-            const sortedTransactions = (transRes.data || []).sort((a, b) => {
-                return (
-                    new Date(b.TransactionDate) - new Date(a.TransactionDate)
-                );
-            });
-
-            setList(sortedTransactions); // Set the sorted list
+            setList(transRes.data || []);
             setCategories(catRes.data || []);
             setPaymentModes(payModeRes.data || []);
         };
@@ -74,18 +66,6 @@ export default function TransactionPage() {
             ...prev,
             [field]: value,
         }));
-    };
-
-    // Function to populate form for editing
-    const handleEditClick = (item) => {
-        setEditingId(item.id); // Store the TransactionId (UUID from Supabase)
-        setFormData({
-            date: item.TransactionDate,
-            amount: item.Amount.toString(),
-            description: item.Description,
-            category: item.Category,
-            paymentMode: item.PaymentMode,
-        });
     };
 
     // 3. Submit to Supabase
@@ -243,133 +223,87 @@ export default function TransactionPage() {
                     <h3 className="font-bold mb-4">Transaction History</h3>
                     <div className="space-y-6">
                         {Object.entries(groupedTransactions).map(
-                            ([month, transactions]) => {
-                                // 1. Calculate the total for this specific month
-                                const monthlyTotal = transactions.reduce(
-                                    (sum, item) => sum + Number(item.Amount),
-                                    0,
-                                );
+                            ([month, transactions]) => (
+                                <div key={month} className="space-y-2">
+                                    {/* Month Header / Toggle Button */}
+                                    <button
+                                        onClick={() => toggleMonth(month)}
+                                        className="w-full flex justify-between items-center bg-gray-300 p-3 rounded-xl font-bold text-gray-700 hover:bg-gray-400 transition-colors"
+                                    >
+                                        <span>{month}</span>
+                                        <span>
+                                            {expandedMonths[month] ? "▲" : "▼"}
+                                        </span>
+                                    </button>
 
-                                // 2. Define a budget limit (e.g., $1000) for color coding
-                                const BUDGET_LIMIT = 1000;
-                                const isOverBudget =
-                                    monthlyTotal > BUDGET_LIMIT;
-
-                                // NEW: Calculate progress percentage (max 100%)
-                                const progress = Math.min(
-                                    (monthlyTotal / BUDGET_LIMIT) * 100,
-                                    100,
-                                );
-
-                                return (
-                                    <div key={month} className="space-y-2">
-                                        {/* Month Header / Toggle Button */}
-                                        <button
-                                            onClick={() => toggleMonth(month)}
-                                            className={`w-full flex flex-col p-3 rounded-xl font-bold transition-all shadow-sm overflow-hidden relative ${
-                                                isOverBudget
-                                                    ? "bg-red-100 text-red-700 hover:bg-red-200"
-                                                    : "bg-green-100 text-green-700 hover:bg-green-200"
-                                            }`}
-                                        >
-                                            <div className="w-full flex justify-between items-center mb-2 z-10">
-                                                <div className="flex items-center gap-2">
-                                                    <span>
-                                                        {expandedMonths[month]
-                                                            ? "▲"
-                                                            : "▼"}
-                                                    </span>
-                                                    <span>{month}</span>
-                                                </div>
-
-                                                <div className="flex flex-col text-right">
-                                                    <span className="text-sm opacity-70 font-normal">
-                                                        Monthly Total
-                                                    </span>
-                                                    <span className="text-lg">
-                                                        $
-                                                        {monthlyTotal.toFixed(
-                                                            2,
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* NEW: Progress Bar Container */}
-                                            <div className="w-full h-2 bg-black/10 rounded-full overflow-hidden z-10">
-                                                {/* Actual Progress Fill */}
+                                    {/* Collapsible Content */}
+                                    {expandedMonths[month] && (
+                                        <div className="space-y-4 pl-2 animate-in fade-in slide-in-from-top-2">
+                                            {transactions.map((item) => (
                                                 <div
-                                                    className={`h-full transition-all duration-500 ${
-                                                        isOverBudget
-                                                            ? "bg-red-500"
-                                                            : "bg-green-500"
-                                                    }`}
-                                                    style={{
-                                                        width: `${progress}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </button>
-
-                                        {/* Collapsible Content */}
-                                        {expandedMonths[month] && (
-                                            <div className="mt-3 space-y-3 pl-2 border-l-2 border-gray-200">
-                                                {transactions.map((item) => (
-                                                    <div
-                                                        key={item.id}
-                                                        className="relative group overflow-hidden rounded-xl"
-                                                    >
-                                                        {/* Action Buttons (Slide-in) */}
-                                                        <div className="absolute right-0 top-0 h-full flex items-center gap-2 pr-4 transition-transform translate-x-full group-hover:translate-x-0">
-                                                            <button className="bg-white p-2 rounded shadow hover:bg-gray-100">
-                                                                🗑
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Transaction Card */}
-                                                        <div className="bg-gray-400 p-4 flex justify-between items-center transition-transform group-hover:-translate-x-16">
-                                                            <div
-                                                                transactionId={
-                                                                    item.transactionId
-                                                                }
-                                                            >
-                                                                <p className="text-[10px] text-black-600 uppercase tracking-wider">
-                                                                    {
-                                                                        item.TransactionDate
-                                                                    }
-                                                                </p>
-                                                                <p className="font-bold text-black-900">
-                                                                    {
-                                                                        item.Description
-                                                                    }
-                                                                </p>
-                                                                <div className="flex gap-2 mt-1">
-                                                                    <span className="text-[10px] bg-pink-500 text-white px-2 py-0.5 rounded-full">
-                                                                        {
-                                                                            item.Category
-                                                                        }
-                                                                    </span>
-                                                                    <span className="text-[10px] bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full">
-                                                                        {
-                                                                            item.PaymentMode
-                                                                        }
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <span className="text-xl font-bold text-black-900">
-                                                                $
-                                                                {Number(
-                                                                    item.Amount,
-                                                                ).toFixed(2)}
-                                                            </span>
-                                                        </div>
+                                                    key={item.id}
+                                                    className="relative group overflow-hidden rounded-xl"
+                                                >
+                                                    {/* Slide-in Actions (Edit/Delete) */}
+                                                    <div className="absolute right-0 top-0 h-full flex items-center gap-2 pr-4 transition-transform translate-x-full group-hover:translate-x-0">
+                                                        <button className="bg-white p-2 rounded shadow">
+                                                            ✎
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                await deleteTransaction(
+                                                                    item.id,
+                                                                );
+                                                                setList(
+                                                                    list.filter(
+                                                                        (t) =>
+                                                                            t.id !==
+                                                                            item.id,
+                                                                    ),
+                                                                );
+                                                            }}
+                                                            className="bg-white p-2 rounded shadow"
+                                                        >
+                                                            🗑
+                                                        </button>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            },
+
+                                                    {/* Transaction Card Details */}
+                                                    <div className="bg-gray-400 p-4 flex justify-between items-center transition-transform group-hover:-translate-x-24">
+                                                        <div>
+                                                            <p className="text-xs text-black-600">
+                                                                {
+                                                                    item.TransactionDate
+                                                                }
+                                                            </p>
+                                                            <p className="font-bold text-black-600">
+                                                                {
+                                                                    item.Description
+                                                                }
+                                                            </p>
+                                                            <div className="flex gap-2 mt-1">
+                                                                <span className="text-[10px] bg-gray-500 text-white px-2 py-0.5 rounded-full">
+                                                                    {
+                                                                        item.Category
+                                                                    }
+                                                                </span>
+                                                                <span className="text-[10px] bg-gray-300 text-gray-700 px-2 py-0.5 rounded-full">
+                                                                    {
+                                                                        item.PaymentMode
+                                                                    }
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xl font-bold">
+                                                            ${item.Amount}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ),
                         )}
                     </div>
                 </section>

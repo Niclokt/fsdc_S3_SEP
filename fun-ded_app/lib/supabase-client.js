@@ -11,8 +11,8 @@ export const fetchTransactions = async (userId) => {
     return await supabase
         .from("transaction")
         .select("*")
-        .eq("user_id", userId)
-        .order("date", { ascending: false });
+        .eq("UserId", userId)
+        .order("TransactionDate", { ascending: false });
 };
 
 export const createTransaction = async (entry) => {
